@@ -1,0 +1,9 @@
+/*
+ * Rename File to whitelist.json
+ *
+ */
+
+
+{
+  "whitelist": ["steam id list for whitelisting players"]
+}

@@ -1,5 +1,7 @@
 import requests
 import json
+import subprocess
+import time
 
 
 class PalworldAPI:
@@ -7,11 +9,6 @@ class PalworldAPI:
         self.base_url = base_url + "/v1/api"
         self.auth = (username, password)
 
-    async def endpoints(self):
-        url = f"{self.base_url}/endpoints"
-        response = requests.get(url, auth=self.auth)
-        response.raise_for_status()
-        return response.json()
 
     async def get_server_info(self):
         url = f"{self.base_url}/info"
@@ -41,16 +38,17 @@ class PalworldAPI:
         url = f"{self.base_url}/save"
         response = requests.post(url, auth=self.auth)
         response.raise_for_status()
-        return response.json()
+        await self.send_broadcast("Server has been saved")
+        return 1
 
     async def send_broadcast(self, message):
         url = f"{self.base_url}/announce"
         payload = {"message": message}
         response = requests.post(url, json=payload, auth=self.auth)
         response.raise_for_status()
-        return response.json()
+        # return response.json()
 
-    async def kick_players(self, playerID):
+    async def kick_player(self, playerID):
         payload = json.dumps({
             "userid": playerID,
             "message": "You are kicked."
@@ -60,7 +58,7 @@ class PalworldAPI:
         response.raise_for_status()
         return response.json()
 
-    async def ban_players(self, playerID):
+    async def ban_player(self, playerID):
         payload = json.dumps({
             "userid": playerID,
             "message": "You are banned."
@@ -70,7 +68,7 @@ class PalworldAPI:
         response.raise_for_status()
         return response.json()
 
-    async def unban_players(self, playerID):
+    async def unban_player(self, playerID):
         payload = json.dumps({
             "userid": playerID
         })
@@ -82,12 +80,22 @@ class PalworldAPI:
     async def shutdown_server(self, waittime, message):
         payload = json.dumps({
             "waittime": waittime,
-            "message": "Server will shutdown in 10 seconds."
+            "message": message
         })
-        url = f"{self.base_url}/shutdown"
-        response = requests.post(url, json=payload, auth=self.auth)
-        response.raise_for_status()
-        return response.json()
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        if await self.save_server() == 1:
+            url = f"{self.base_url}/shutdown"
+            print(url)
+
+            response = requests.request("POST", url, headers=headers, data=payload)
+            return 1
+
+        else:
+            await self.send_broadcast("Server hasn't been  and will not shut down")
+            return 0
+        # return response.json()
 
     async def stop_server(self):
         url = f"{self.base_url}/stop"
@@ -95,9 +103,12 @@ class PalworldAPI:
         response.raise_for_status()
         return response.json()
 
-    async def send_command(self, command):
+    def send_command(self, command):
         url = f"{self.base_url}/command"
         payload = {"command": command}
         response = requests.post(url, json=payload, auth=self.auth)
         response.raise_for_status()
         return response.json()
+
+    def start_server(self):
+        subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File", "start_server.ps1"])

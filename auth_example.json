@@ -1,0 +1,11 @@
+/*
+ * Rename File to auth.json
+ *
+ */
+
+
+{
+  "server": "http://serverIP:port",
+  "username": "admin username",
+  "password": "admin password"
+}
